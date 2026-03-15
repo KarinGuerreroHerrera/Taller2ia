@@ -66,8 +66,95 @@ class MinimaxAgent(MultiAgentSearchAgent):
         - Return the ACTION (not the value) that maximizes the minimax value for the drone.
         """
         # TODO: Implement your code here
-        return None
+        # def minimax(state, depth, is_max):
+        #     if state.is_win() or state.is_lose() or depth == 0:
+        #         return self.evaluation_function(state)
+        #     
+        #     if is_max:
+        #         best_value = float('-inf')
+        #         for action in state.get_legal_actions(0):
+        #             succ = state.generate_successor(0, action)
+        #             best_value = max(best_value, minimax_imperfecto(succ, depth, False))
+        #         return best_value
+        #     else:
+        #         best_value = float('inf')
+        #         # Problema: asumo que solo hay un cazador (agente 1) y bajo la profundidad
+        #         for action in state.get_legal_actions(1):
+        #             succ = state.generate_successor(1, action)
+        #             best_value = min(best_value, minimax_imperfecto(succ, depth - 1, True))
+        #         return best_value
+        # 
+        # best_action = None
+        # best_value = float('-inf')
+        # for action in state.get_legal_actions(0):
+        #     succ = state.generate_successor(0, action)
+        #     val = minimax_imperfecto(succ, self.depth, False)
+        #     if val > best_value:
+        #         best_value = val
+        #         best_action = action
+        # return best_action
+        
+        # =====================================================================
+        # PROMPT UTILIZADO PARA LA IA:
+        # "Holii, hice esta primera versión de Minimax y la función de evaluación. 
+        # Asumí que solo hay 1 cazador porque no sabía cómo iterar si son más de uno, 
+        # y bajé la profundidad en el turno del cazador. En la evaluación solo estoy 
+        # intentando alejarme del primer cazador con la distancia de Manhattan. 
+        # No alcancé a hacer Poda Alfa-Beta ni Expectimax. 
+        # ¿Me ayudas a corregir Minimax para que funcione con múltiples cazadores, 
+        # agregar Alfa-Beta, Expectimax, y mejorar mi función de evaluación para 
+        # que considere las entregas y todos los cazadores?"
+        # =====================================================================
+        def value(state_current, depth_current, agent_index):
+            if state_current.is_win() or state_current.is_lose() or depth_current == 0:
+                return self.evaluation_function(state_current)
+            
+            if agent_index == 0:
+                return max_value(state_current, depth_current, agent_index)
+            else:
+                return min_value(state_current, depth_current, agent_index)
 
+        def max_value(state_current, depth_current, agent_index):
+            v = float('-inf')
+            legal_actions = state_current.get_legal_actions(agent_index)
+            if not legal_actions:
+                return self.evaluation_function(state_current)
+            
+            for action in legal_actions:
+                successor = state_current.generate_successor(agent_index, action)
+                next_agent = (agent_index + 1) % state_current.get_num_agents()
+                next_depth = depth_current - 1 if next_agent == 0 else depth_current
+                v = max(v, value(successor, next_depth, next_agent))
+            return v
+            
+        def min_value(state_current, depth_current, agent_index):
+            v = float('inf')
+            legal_actions = state_current.get_legal_actions(agent_index)
+            if not legal_actions:
+                return self.evaluation_function(state_current)
+            
+            for action in legal_actions:
+                successor = state_current.generate_successor(agent_index, action)
+                next_agent = (agent_index + 1) % state_current.get_num_agents()
+                next_depth = depth_current - 1 if next_agent == 0 else depth_current
+                v = min(v, value(successor, next_depth, next_agent))
+            return v
+
+        best_action = None
+        best_val = float('-inf')
+        legal_actions = state.get_legal_actions(self.index)
+        
+        for action in legal_actions:
+            succ = state.generate_successor(self.index, action)
+            next_agent = (self.index + 1) % state.get_num_agents()
+            next_depth = self.depth - 1 if next_agent == 0 else self.depth
+            val = value(succ, next_depth, next_agent)
+            
+            if val > best_val:
+                best_val = val
+                best_action = action
+                
+        return best_action
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
