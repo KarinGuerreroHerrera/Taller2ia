@@ -95,14 +95,14 @@ class MinimaxAgent(MultiAgentSearchAgent):
         # return best_action
         
         # =====================================================================
-        # PROMPT UTILIZADO PARA LA IA:
+        # PROMPT :
         # "Holii, hice esta primera versión de Minimax y la función de evaluación. 
         # Asumí que solo hay 1 cazador porque no sabía cómo iterar si son más de uno, 
         # y bajé la profundidad en el turno del cazador. En la evaluación solo estoy 
         # intentando alejarme del primer cazador con la distancia de Manhattan. 
-        # No alcancé a hacer Poda Alfa-Beta ni Expectimax. 
+        # No alcancé a hacer Poda Alfa-Beta. 
         # ¿Me ayudas a corregir Minimax para que funcione con múltiples cazadores, 
-        # agregar Alfa-Beta, Expectimax, y mejorar mi función de evaluación para 
+        # agregar Alfa-Beta, y mejorar mi función de evaluación para 
         # que considere las entregas y todos los cazadores?"
         # =====================================================================
         def value(state_current, depth_current, agent_index):
@@ -178,7 +178,65 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         - Pass alpha and beta through the recursive calls.
         """
         # TODO: Implement your code here (BONUS)
-        return None
+        def value(state_current, depth_current, agent_index, alpha, beta):
+            if state_current.is_win() or state_current.is_lose() or depth_current == 0:
+                return self.evaluation_function(state_current)
+            
+            if agent_index == 0:
+                return max_value(state_current, depth_current, agent_index, alpha, beta)
+            else:
+                return min_value(state_current, depth_current, agent_index, alpha, beta)
+
+        def max_value(state_current, depth_current, agent_index, alpha, beta):
+            v = float('-inf')
+            legal_actions = state_current.get_legal_actions(agent_index)
+            if not legal_actions:
+                return self.evaluation_function(state_current)
+            
+            for action in legal_actions:
+                successor = state_current.generate_successor(agent_index, action)
+                next_agent = (agent_index + 1) % state_current.get_num_agents()
+                next_depth = depth_current - 1 if next_agent == 0 else depth_current
+                v = max(v, value(successor, next_depth, next_agent, alpha, beta))
+                if v > beta:
+                    return v
+                alpha = max(alpha, v)
+            return v
+            
+        def min_value(state_current, depth_current, agent_index, alpha, beta):
+            v = float('inf')
+            legal_actions = state_current.get_legal_actions(agent_index)
+            if not legal_actions:
+                return self.evaluation_function(state_current)
+            
+            for action in legal_actions:
+                successor = state_current.generate_successor(agent_index, action)
+                next_agent = (agent_index + 1) % state_current.get_num_agents()
+                next_depth = depth_current - 1 if next_agent == 0 else depth_current
+                v = min(v, value(successor, next_depth, next_agent, alpha, beta))
+                if v < alpha:
+                    return v
+                beta = min(beta, v)
+            return v
+
+        best_action = None
+        best_val = float('-inf')
+        alpha = float('-inf')
+        beta = float('inf')
+        
+        legal_actions = state.get_legal_actions(self.index)
+        for action in legal_actions:
+            succ = state.generate_successor(self.index, action)
+            next_agent = (self.index + 1) % state.get_num_agents()
+            next_depth = self.depth - 1 if next_agent == 0 else self.depth
+            val = value(succ, next_depth, next_agent, alpha, beta)
+            
+            if val > best_val:
+                best_val = val
+                best_action = action
+            alpha = max(alpha, best_val)
+                
+        return best_action
 
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
